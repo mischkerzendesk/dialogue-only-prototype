@@ -66,7 +66,7 @@ Simply open `index.html` in a web browser. No build process or dependencies requ
 open index.html
 ```
 
-Or visit the [live demo](https://your-github-username.github.io/dialogue-only-prototype/).
+Or visit the [live demo](https://mischkerzendesk.github.io/dialogue-only-prototype/).
 
 ## Interactions
 
