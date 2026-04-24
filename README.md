@@ -13,10 +13,12 @@ When use cases like "Affirmative" (yes) or "Negative" (no) are active globally:
 ```
 Customer: "Yes"
 AI Agent: [Matches "Affirmative" use case]
-AI Agent: [No reply configured → dead end]
+AI Agent: [No reply configured → falls back to RAG]
+AI Agent: [RAG has no relevant response for "yes"]
+AI Agent: "I couldn't find an answer to that" [conversation broken]
 ```
 
-The bot doesn't know what the customer is saying "yes" to because the context only exists within a dialogue flow.
+The bot doesn't know what the customer is saying "yes" to because the context only exists within a dialogue flow. This triggers RAG fallback, which can't provide a meaningful response to context-free "yes/no" statements, breaking the conversation.
 
 ## The Solution
 
@@ -39,7 +41,7 @@ System proactively identifies use cases that may need dialogue-only scoping:
 
 ### 2. Use Cases Table
 - Visual indication of dialogue-only status with tags
-- Highlights use cases with 0 replies (potential dead-end risk)
+- Highlights use cases with 0 replies (potential RAG fallback risk)
 - Shows active/inactive status
 
 ### 3. Bulk Review Modal
