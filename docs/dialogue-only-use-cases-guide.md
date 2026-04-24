@@ -55,36 +55,10 @@ The use case only triggers when it makes sense - inside the dialogue where "yes"
 - **Reason for request:** "Customer confirms"
 - **Why dialogue-only:** Without context, "yes" is meaningless - "Yes" to what?
 
-**Example phrases:**
-- "Yes"
-- "Correct"
-- "That's right"
-- "Yeah, that's it"
-- "Sure"
-- "Yep"
-
 ### 2. **Negative**
 - **Purpose:** Matches customer rejections or disagreements (no, that's wrong, not that, etc.)
 - **Reason for request:** "Customer declines" or "Customer disagrees"
 - **Why dialogue-only:** Like affirmative, "no" needs context - "No" to what?
-
-**Example phrases:**
-- "No"
-- "Nope"
-- "That's not right"
-- "Not that one"
-- "Incorrect"
-- "Wrong"
-
-### 3. **Choose Color / Selection Options**
-- **Purpose:** Matches when a customer selects from a set of options presented in a dialogue
-- **Why dialogue-only:** The available options only exist within the dialogue context
-
-**Example phrases:**
-- "Red"
-- "The blue one"
-- "Option 2"
-- "I'll take the first one"
 
 ---
 
@@ -182,24 +156,16 @@ If a use case has:
 - 1+ dialogues linked, AND
 - Not marked as dialogue-only
 
-→ It's likely a dead-end risk. Mark it as dialogue-only.
+→ It's likely a RAG fallback risk. Mark it as dialogue-only.
 
-### 3. Be Careful with Selection Intents
-
-Use cases that represent menu selections ("Choose color", "Select size", etc.) should generally be dialogue-only **unless** your customers frequently send these as standalone requests.
-
-**Example exception:**
-- If customers commonly say "I want the blue one" as an initial message (not in response to options), you may want the "Choose color" intent to be globally available with a clarifying reply like:
-  - "I'd be happy to help! Which product are you referring to?"
-
-### 4. Test Behavior After Marking
+### 3. Test Behavior After Marking
 
 After enabling dialogue-only:
 1. Test the use case **inside** its linked dialogue → should work
 2. Test the use case phrase **outside** any dialogue → should NOT trigger that use case
 3. Verify that general conversation still matches appropriate use cases
 
-### 5. Document Scoped Use Cases
+### 4. Document Scoped Use Cases
 
 In teams with multiple admin users, add a note to the use case's category or description indicating it's dialogue-scoped:
 - **Category:** "Dialogue flow - responses"
@@ -263,7 +229,7 @@ If you prefer to review each use case individually:
 2. Filter by "Active" status
 3. For each zero-reply use case:
    - Check if it's linked to dialogues
-   - Determine if it's context-dependent (yes/no/selection)
+   - Determine if it's context-dependent (yes/no responses)
    - Mark as dialogue-only if appropriate
 
 ---
