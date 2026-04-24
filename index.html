@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agents — Dialogue Only Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f5f4;
+    --surface: #ffffff;
+    --surface-raised: #fafaf9;
+    --border: #e7e5e4;
+    --border-light: #f0efee;
+    --text-primary: #1c1917;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-inverse: #ffffff;
+    --accent: #4338ca;
+    --accent-hover: #3730a3;
+    --accent-light: #eef2ff;
+    --accent-border: #c7d2fe;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --green-text: #166534;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --amber-text: #92400e;
+    --purple: #7c3aed;
+    --purple-bg: #f3e8ff;
+    --purple-text: #6d28d9;
+    --red: #dc2626;
+    --sidebar-bg: #1c1917;
+    --sidebar-icon: #a8a29e;
+    --sidebar-active: #4338ca;
+    --radius-sm: 4px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-modal: 0 24px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.08);
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .shell { display: flex; height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 52px; background: var(--sidebar-bg);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 0; gap: 4px; flex-shrink: 0;
+  }
+  .sidebar-icon {
+    width: 36px; height: 36px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--sidebar-icon); cursor: pointer;
+    transition: all var(--transition);
+  }
+  .sidebar-icon:hover { background: rgba(255,255,255,0.08); color: #d6d3d1; }
+  .sidebar-icon.active { background: var(--sidebar-active); color: white; }
+  .sidebar-icon svg { width: 20px; height: 20px; }
+  .sidebar-spacer { flex: 1; }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Header */
+  .header {
+    height: 56px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .header-title { font-size: 17px; font-weight: 600; }
+  .header-badge {
+    font-size: 11px; font-weight: 600; background: var(--accent);
+    color: white; padding: 2px 8px; border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-bot {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius); font-size: 13px; cursor: pointer;
+    transition: all var(--transition);
+  }
+  .header-bot:hover { border-color: var(--accent-border); background: var(--accent-light); }
+  .header-bot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+  .header-bot .bot-name { font-weight: 500; }
+  .header-bot .bot-meta { color: var(--text-muted); font-size: 12px; }
+  .header-icons { display: flex; gap: 4px; }
+  .header-icon-btn {
+    width: 32px; height: 32px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); cursor: pointer; border: none; background: none;
+    transition: all var(--transition);
+  }
+  .header-icon-btn:hover { background: var(--bg); }
+
+  .content { flex: 1; overflow-y: auto; }
+
+  /* Views */
+  .view { display: none; animation: fadeIn 300ms ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* LIST VIEW */
+  .list-view { padding: 24px; }
+  .list-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .list-header h2 { font-size: 20px; font-weight: 600; }
+  .list-header h2 span { color: var(--text-muted); font-weight: 400; }
+
+  .btn {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: var(--radius); cursor: pointer;
+    transition: all var(--transition); border: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent-border); background: var(--accent-light); }
+  .btn-ghost { background: none; color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); }
+
+  .list-filters { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .filter-chip {
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    padding: 5px 14px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-secondary); cursor: pointer;
+    transition: all var(--transition);
+  }
+  .filter-chip:hover { border-color: var(--accent-border); color: var(--text-primary); }
+  .filter-chip.active { background: var(--accent-light); border-color: var(--accent-border); color: var(--accent); }
+
+  /* Nudge */
+  .nudge {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; margin-bottom: 16px;
+    background: var(--amber-bg); border: 1px solid var(--amber-border);
+    border-radius: var(--radius); font-size: 13px; color: var(--amber-text);
+    animation: slideDown 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: top;
+  }
+  .nudge.hidden { display: none; }
+  @keyframes slideDown { from { opacity: 0; transform: scaleY(0.8) translateY(-8px); } to { opacity: 1; transform: scaleY(1) translateY(0); } }
+  .nudge svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--amber); }
+  .nudge strong { font-weight: 600; }
+  .nudge-action {
+    margin-left: auto; font-weight: 600; color: var(--amber-text);
+    text-decoration: underline; cursor: pointer; white-space: nowrap;
+    transition: opacity var(--transition);
+  }
+  .nudge-action:hover { opacity: 0.7; }
+
+  /* Table */
+  .uc-table-wrap {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .uc-table { width: 100%; border-collapse: collapse; }
+  .uc-table th {
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 12px 20px;
+    border-bottom: 1px solid var(--border); background: var(--surface-raised);
+  }
+  .uc-table td {
+    padding: 14px 20px; font-size: 14px;
+    border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition);
+  }
+  .uc-table tr:last-child td { border-bottom: none; }
+  .uc-table tbody tr { cursor: pointer; }
+  .uc-table tbody tr:hover td { background: var(--accent-light); }
+  .uc-name { font-weight: 500; }
+
+  .tag {
+    display: inline-flex; align-items: center; font-size: 11px;
+    font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    letter-spacing: 0.2px;
+  }
+  .tag-dialogue { background: var(--purple-bg); color: var(--purple-text); }
+  .tag-active { background: var(--green-bg); color: var(--green-text); }
+  .tag-inactive { background: var(--bg); color: var(--text-muted); }
+  .replies-zero { color: var(--amber); font-weight: 600; }
+
+  /* DETAIL VIEW */
+  .detail-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-topbar-left { display: flex; align-items: center; gap: 12px; }
+  .back-btn {
+    width: 32px; height: 32px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); cursor: pointer; border: none; background: none;
+    transition: all var(--transition);
+  }
+  .back-btn:hover { background: var(--bg); color: var(--text-primary); }
+  .uc-selector { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .uc-selector-label { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+  .detail-topbar-right { display: flex; align-items: center; gap: 14px; }
+  .detail-meta { font-size: 12px; color: var(--text-muted); }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+  .toggle-label { font-size: 12px; font-weight: 600; color: var(--green-text); }
+  .toggle {
+    width: 40px; height: 22px; background: var(--green);
+    border-radius: 11px; position: relative; cursor: pointer;
+    transition: background var(--transition); border: none;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; right: 3px;
+    width: 16px; height: 16px; background: white;
+    border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform var(--transition);
+  }
+
+  .detail-content { padding: 24px; max-width: 960px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px;
+    box-shadow: var(--shadow-sm); margin-bottom: 24px;
+  }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 20px; }
+
+  .fields-grid {
+    display: grid; grid-template-columns: 1fr 1fr auto;
+    gap: 20px; margin-bottom: 20px;
+  }
+  .field-label {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px;
+  }
+  .field-label .req { color: var(--red); }
+  .field-label .info-icon {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1px solid var(--border); display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 9px; color: var(--text-muted); cursor: help;
+  }
+  .field-value { font-size: 14px; color: var(--text-primary); padding: 4px 0; }
+  .field-placeholder { font-size: 14px; color: var(--text-muted); padding: 4px 0; }
+
+  .checkbox-section { padding-top: 20px; border-top: 1px solid var(--border-light); }
+  .checkbox-row { display: flex; align-items: flex-start; gap: 12px; }
+  .custom-checkbox {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; min-width: 20px;
+    border: 2px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: all var(--transition);
+    position: relative; margin-top: 1px;
+  }
+  .custom-checkbox:hover { border-color: var(--accent); }
+  .custom-checkbox:checked { background: var(--accent); border-color: var(--accent); }
+  .custom-checkbox:checked::after {
+    content: ''; position: absolute; top: 2px; left: 6px;
+    width: 5px; height: 10px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .checkbox-label-text { font-size: 14px; font-weight: 600; cursor: pointer; }
+  .checkbox-helper { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .checkbox-hint {
+    font-size: 12px; color: var(--text-muted); margin-top: 6px;
+    font-style: italic;
+    padding: 6px 10px; background: var(--amber-bg);
+    border-radius: var(--radius-sm); border-left: 3px solid var(--amber-border);
+    display: inline-block;
+  }
+
+  .reply-section { margin-bottom: 24px; }
+  .reply-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600; margin-bottom: 10px;
+  }
+  .reply-select {
+    font-family: inherit; font-size: 14px; padding: 8px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer; color: var(--text-primary);
+    transition: border-color var(--transition);
+  }
+  .reply-select:hover { border-color: var(--accent-border); }
+
+  .tabs {
+    display: flex; gap: 0; margin-top: 16px;
+    border-bottom: 2px solid var(--border-light);
+  }
+  .tab {
+    padding: 10px 18px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all var(--transition);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--text-secondary); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .beta {
+    font-size: 10px; font-weight: 600;
+    background: var(--bg); color: var(--text-secondary);
+    padding: 1px 6px; border-radius: var(--radius-sm);
+  }
+
+  .empty-state {
+    text-align: center; padding: 64px 24px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    border-top: none;
+  }
+  .empty-icon {
+    width: 64px; height: 64px; margin: 0 auto 16px;
+    background: var(--bg); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+  }
+  .empty-state h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .empty-state p {
+    font-size: 13px; color: var(--text-muted);
+    max-width: 280px; margin: 0 auto 20px; line-height: 1.5;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(28, 25, 23, 0.4);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; opacity: 0; pointer-events: none;
+    transition: opacity 250ms ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-modal); width: 520px; max-height: 80vh;
+    overflow: hidden;
+    transform: scale(0.95) translateY(12px);
+    transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+  .modal-header { padding: 24px 24px 0; }
+  .modal-header h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .modal-header p { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+  .modal-body { padding: 20px 24px; }
+  .modal-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition);
+  }
+  .modal-item:last-child { border-bottom: none; }
+  .modal-item-name { font-size: 14px; font-weight: 500; }
+  .modal-item-meta {
+    margin-left: auto; font-size: 12px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .modal-item-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-muted); display: inline-block; }
+
+  .modal-footer {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 16px 24px; border-top: 1px solid var(--border);
+  }
+
+  .modal-count {
+    font-size: 12px; color: var(--text-muted);
+    margin-right: auto; display: flex; align-items: center;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--sidebar-bg); color: white;
+    padding: 12px 20px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg);
+    z-index: 2000; transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast svg { width: 16px; height: 16px; color: var(--green); }
+
+  .proto-badge {
+    position: fixed; top: 12px; right: 12px; z-index: 3000;
+    background: var(--sidebar-bg); color: var(--text-muted);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    padding: 4px 10px; border-radius: 20px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="proto-badge">Prototype</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+    <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+  </nav>
+
+  <div class="main">
+    <header class="header">
+      <div class="header-left">
+        <span class="header-title">AI agents</span>
+        <span class="header-badge">Advanced</span>
+      </div>
+      <div class="header-right">
+        <div class="header-bot">
+          <span class="dot"></span>
+          <span class="bot-name">Michal Gen3</span>
+          <span class="bot-meta">Building, Messaging</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="header-icons">
+          <button class="header-icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+          <button class="header-icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- LIST VIEW -->
+      <div id="list-view" class="view active list-view">
+        <div class="list-header">
+          <h2>Use cases <span>(6)</span></h2>
+          <button class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New use case
+          </button>
+        </div>
+
+        <div class="list-filters">
+          <button class="filter-chip active">All</button>
+          <button class="filter-chip">Active</button>
+          <button class="filter-chip">Inactive</button>
+          <button class="filter-chip">Category &#8595;</button>
+        </div>
+
+        <div id="nudge" class="nudge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="nudge-text">3 use cases may need to be marked as <strong>Dialogue only</strong></span>
+          <span class="nudge-action" id="nudge-review-btn">Review</span>
+        </div>
+
+        <div class="uc-table-wrap">
+          <table class="uc-table">
+            <thead><tr><th>Name</th><th>Scope</th><th>Status</th><th>Replies</th></tr></thead>
+            <tbody>
+              <tr id="row-affirmative"><td class="uc-name">Affirmative</td><td id="tag-affirmative"></td><td><span class="tag tag-active">Active</span></td><td class="replies-zero">0</td></tr>
+              <tr id="row-negative"><td class="uc-name">Negative</td><td id="tag-negative"></td><td><span class="tag tag-active">Active</span></td><td class="replies-zero">0</td></tr>
+              <tr id="row-color"><td class="uc-name">Choose color</td><td id="tag-color"></td><td><span class="tag tag-active">Active</span></td><td class="replies-zero">0</td></tr>
+              <tr><td class="uc-name">Billing issue</td><td></td><td><span class="tag tag-active">Active</span></td><td>1</td></tr>
+              <tr><td class="uc-name">Password reset</td><td></td><td><span class="tag tag-active">Active</span></td><td>2</td></tr>
+              <tr><td class="uc-name">General greeting</td><td></td><td><span class="tag tag-inactive">Inactive</span></td><td>1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DETAIL VIEW -->
+      <div id="detail-view" class="view detail-view">
+        <div class="detail-topbar">
+          <div class="detail-topbar-left">
+            <button class="back-btn" id="back-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+            <div>
+              <div class="uc-selector-label">Use case</div>
+              <div class="uc-selector" id="detail-name">Affirmative</div>
+            </div>
+          </div>
+          <div class="detail-topbar-right">
+            <span class="detail-meta">Updated by Michal Mischker Feb 18</span>
+            <div class="toggle-wrap">
+              <span class="toggle-label">Active</span>
+              <button class="toggle"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-content">
+          <div class="card">
+            <div class="card-title">Use case details</div>
+            <div class="fields-grid">
+              <div class="field">
+                <div class="field-label">Name<span class="req">*</span> <span class="info-icon">?</span></div>
+                <div class="field-value" id="detail-field-name">Affirmative</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Category</div>
+                <div class="field-placeholder">Select to add text</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Use case actions: 0</div>
+                <button class="btn btn-secondary" style="margin-top: 2px;">Add action</button>
+              </div>
+            </div>
+            <div class="field" style="margin-bottom: 20px;">
+              <div class="field-label">Reason for request<span class="req">*</span> <span class="info-icon">?</span></div>
+              <div class="field-value" id="detail-field-reason">customer confirms</div>
+            </div>
+
+            <div class="checkbox-section">
+              <div class="checkbox-row">
+                <input type="checkbox" class="custom-checkbox" id="dialogue-only-cb">
+                <div>
+                  <label for="dialogue-only-cb" class="checkbox-label-text">Dialogue only</label>
+                  <div class="checkbox-helper">When enabled, this use case will only be matched inside dialogue flows. It will not trigger during general conversation.</div>
+                  <div class="checkbox-hint" id="detail-hint">This use case has no replies and is linked to a dialogue. Without this flag, it may cause dead ends when matched outside a dialogue.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reply-section">
+            <div class="reply-title">Reply method <span class="info-icon" style="font-size:9px;width:14px;height:14px;border-radius:50%;border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:help;">?</span></div>
+            <select class="reply-select"><option>Use dialogue</option><option>Use procedure</option><option>Use reply</option></select>
+            <div class="tabs">
+              <div class="tab active">Procedure <span class="beta">Beta</span></div>
+              <div class="tab">Dialogues (0)</div>
+            </div>
+          </div>
+
+          <div class="empty-state">
+            <div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+            <h4>No procedure in sight</h4>
+            <p>Automatically create a procedure by describing the steps to resolve this request, as you would to a human agent.</p>
+            <button class="btn btn-primary">Create procedure</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <h3>Mark use cases as Dialogue only</h3>
+      <p>These use cases are triggering during general conversation, causing dead ends and default replies. Marking them as Dialogue only restricts them to dialogue flows where they belong.</p>
+      <p style="margin-top:8px;font-size:12px;color:#57534e;">You can change this later in each use case's settings.</p>
+    </div>
+    <div class="modal-body">
+      <div class="modal-item">
+        <input type="checkbox" class="custom-checkbox modal-cb" data-uc="affirmative" checked>
+        <span class="modal-item-name">Affirmative</span>
+        <span class="modal-item-meta">0 replies <span class="dot"></span> 1 dialogue</span>
+      </div>
+      <div class="modal-item">
+        <input type="checkbox" class="custom-checkbox modal-cb" data-uc="negative" checked>
+        <span class="modal-item-name">Negative</span>
+        <span class="modal-item-meta">0 replies <span class="dot"></span> 1 dialogue</span>
+      </div>
+      <div class="modal-item">
+        <input type="checkbox" class="custom-checkbox modal-cb" data-uc="color">
+        <span class="modal-item-name">Choose color</span>
+        <span class="modal-item-meta">0 replies <span class="dot"></span> 2 dialogues</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="modal-count" id="modal-count">2 selected</span>
+      <button class="btn btn-ghost" id="dismiss-btn">Dismiss</button>
+      <button class="btn btn-primary" id="apply-btn">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+  <span id="toast-text">Changes saved</span>
+</div>
+
+<script>
+  // State
+  var dialogueOnly = { affirmative: false, negative: false, color: false };
+  var nudgeDismissed = false;
+  var currentUc = null;
+
+  var useCases = {
+    affirmative: { name: 'Affirmative', reason: 'customer confirms' },
+    negative: { name: 'Negative', reason: 'customer declines' }
+  };
+
+  // DOM refs
+  var listView = document.getElementById('list-view');
+  var detailView = document.getElementById('detail-view');
+  var nudgeEl = document.getElementById('nudge');
+  var nudgeText = document.getElementById('nudge-text');
+  var modalOverlay = document.getElementById('modal-overlay');
+  var modalBox = document.getElementById('modal-box');
+  var toastEl = document.getElementById('toast');
+  var toastText = document.getElementById('toast-text');
+  var modalCountEl = document.getElementById('modal-count');
+
+  // Navigation
+  function showList() {
+    listView.classList.add('active');
+    detailView.classList.remove('active');
+    currentUc = null;
+    updateListTags();
+    updateNudge();
+  }
+
+  function showDetail(uc) {
+    var data = useCases[uc];
+    if (!data) return;
+    currentUc = uc;
+    document.getElementById('detail-name').textContent = data.name;
+    document.getElementById('detail-field-name').textContent = data.name;
+    document.getElementById('detail-field-reason').textContent = data.reason;
+    document.getElementById('dialogue-only-cb').checked = dialogueOnly[uc];
+    detailView.classList.add('active');
+    listView.classList.remove('active');
+  }
+
+  // List tags - using DOM API instead of innerHTML
+  function updateListTags() {
+    ['affirmative', 'negative', 'color'].forEach(function(uc) {
+      var el = document.getElementById('tag-' + uc);
+      if (el) {
+        while (el.firstChild) el.removeChild(el.firstChild);
+        if (dialogueOnly[uc]) {
+          var span = document.createElement('span');
+          span.className = 'tag tag-dialogue';
+          span.textContent = 'Dialogue only';
+          el.appendChild(span);
+        }
+      }
+    });
+  }
+
+  // Nudge
+  function updateNudge() {
+    var candidates = ['affirmative', 'negative', 'color'].filter(function(uc) { return !dialogueOnly[uc]; });
+    if (nudgeDismissed || candidates.length === 0) {
+      nudgeEl.classList.add('hidden');
+    } else {
+      nudgeEl.classList.remove('hidden');
+      nudgeText.textContent = '';
+      nudgeText.appendChild(document.createTextNode(candidates.length + ' use case' + (candidates.length > 1 ? 's' : '') + ' may need to be marked as '));
+      var strong = document.createElement('strong');
+      strong.textContent = 'Dialogue only';
+      nudgeText.appendChild(strong);
+    }
+  }
+
+  // Modal
+  function openModal() {
+    document.querySelectorAll('.modal-cb').forEach(function(cb) {
+      var uc = cb.dataset.uc;
+      cb.checked = !dialogueOnly[uc];
+    });
+    updateModalCount();
+    modalOverlay.classList.add('open');
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('open');
+  }
+
+  function dismissNudge() {
+    nudgeDismissed = true;
+    closeModal();
+    updateNudge();
+    showToast('Review dismissed');
+  }
+
+  function applyBulk() {
+    var checked = [];
+    document.querySelectorAll('.modal-cb').forEach(function(cb) {
+      if (cb.checked) {
+        dialogueOnly[cb.dataset.uc] = true;
+        checked.push(cb.dataset.uc);
+      }
+    });
+    closeModal();
+    updateListTags();
+    updateNudge();
+    showToast(checked.length + ' use case' + (checked.length > 1 ? 's' : '') + ' marked as Dialogue only');
+  }
+
+  function updateModalCount() {
+    var count = document.querySelectorAll('.modal-cb:checked').length;
+    modalCountEl.textContent = count + ' selected';
+  }
+
+  // Toast
+  function showToast(text) {
+    toastText.textContent = text;
+    toastEl.classList.add('show');
+    setTimeout(function() { toastEl.classList.remove('show'); }, 2400);
+  }
+
+  // Event listeners
+  document.getElementById('nudge-review-btn').addEventListener('click', openModal);
+  document.getElementById('back-btn').addEventListener('click', showList);
+  document.getElementById('dismiss-btn').addEventListener('click', dismissNudge);
+  document.getElementById('apply-btn').addEventListener('click', applyBulk);
+
+  modalOverlay.addEventListener('click', function(e) {
+    if (e.target === modalOverlay) closeModal();
+  });
+  modalBox.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  document.querySelectorAll('.modal-cb').forEach(function(cb) {
+    cb.addEventListener('change', updateModalCount);
+  });
+
+  document.getElementById('row-affirmative').addEventListener('click', function() { showDetail('affirmative'); });
+  document.getElementById('row-negative').addEventListener('click', function() { showDetail('negative'); });
+
+  document.getElementById('dialogue-only-cb').addEventListener('change', function() {
+    if (currentUc) {
+      dialogueOnly[currentUc] = this.checked;
+      var name = useCases[currentUc] ? useCases[currentUc].name : currentUc;
+      showToast(this.checked ? '"' + name + '" marked as Dialogue only' : '"' + name + '" unmarked');
+    }
+  });
+
+  // Init
+  updateListTags();
+  updateNudge();
+</script>
+</body>
+</html>
