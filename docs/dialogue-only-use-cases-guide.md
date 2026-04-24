@@ -27,10 +27,12 @@ When use cases like "Affirmative" or "Negative" are active globally:
 ```
 Customer: "Yes"
 AI Agent: [Matches "Affirmative" use case]
-AI Agent: [No reply configured, dead end]
+AI Agent: [No reply configured → falls back to RAG]
+AI Agent: [RAG has no relevant response for "yes"]
+AI Agent: "I couldn't find an answer to that" [conversation broken]
 ```
 
-The bot doesn't know what the customer is saying "yes" to, because the context comes from a dialogue flow. Matching it as a standalone intent creates a dead end.
+The bot doesn't know what the customer is saying "yes" to, because the context comes from a dialogue flow. Matching it as a standalone intent triggers RAG fallback, which can't provide a meaningful response to context-free "yes/no" statements. This interrupts and breaks the conversation flow.
 
 ### With Dialogue-Only Scoping
 
@@ -106,7 +108,7 @@ The platform may show a warning banner when it detects potential dialogue-only c
 **Indicators that suggest a use case should be dialogue-only:**
 - The use case has **0 replies** configured
 - The use case is **linked to one or more dialogues**
-- The use case would cause a **dead end** if matched outside a dialogue
+- The use case would trigger **RAG fallback** with no meaningful response if matched outside a dialogue
 
 Click **"Review"** on the banner to see which use cases are flagged and bulk-apply the setting.
 
@@ -122,7 +124,7 @@ Click **"Review"** on the banner to see which use cases are flagged and bulk-app
 > "When enabled, this use case will only be matched inside dialogue flows. It will not trigger during general conversation."
 
 **Context hint (appears when relevant):**
-> "This use case has no replies and is linked to a dialogue. Without this flag, it may cause dead ends when matched outside a dialogue."
+> "This use case has no replies and is linked to a dialogue. Without this flag, it will trigger RAG fallback when matched outside a dialogue, which may break conversation flow."
 
 ---
 
@@ -138,7 +140,9 @@ Task identification runs on ALL use cases
   ↓
 If "Affirmative" matches → triggers use case globally
   ↓
-No reply configured → dead end or default reply
+No reply configured → falls back to RAG
+  ↓
+RAG has no response → default reply (conversation broken)
 ```
 
 #### Dialogue-Only: Enabled
@@ -213,11 +217,12 @@ In teams with multiple admin users, add a note to the use case's category or des
 3. Is the Affirmative use case set to "Active" status?
 4. Review the dialogue flow to ensure it's properly structured to expect a yes/no response
 
-### "Customers are hitting dead ends when they say 'yes'"
+### "Customers get unhelpful responses when they say 'yes'"
 
 **This is expected if:**
 - They're saying "yes" **outside** a dialogue context
 - The use case is NOT marked as dialogue-only and has no general reply
+- System falls back to RAG, which can't provide a meaningful response to context-free "yes"
 
 **Solutions:**
 1. Mark the use case as dialogue-only (recommended)
@@ -228,7 +233,7 @@ In teams with multiple admin users, add a note to the use case's category or des
 You can selectively apply dialogue-only scoping:
 1. In the modal, **uncheck** the use case you want to keep globally available
 2. Click "Apply" to scope only the checked items
-3. Configure a general reply for the globally-available use case so it doesn't create dead ends
+3. Configure a general reply for the globally-available use case to avoid RAG fallback on context-free responses
 
 ### "Can I make a use case available both in dialogues AND general conversation?"
 
