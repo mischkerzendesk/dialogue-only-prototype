@@ -14,6 +14,8 @@ status: draft
 
 This is essential for use cases like "Affirmative" (yes) and "Negative" (no) that represent customer responses within a specific dialogue context, not standalone requests.
 
+**🎯 [View Interactive Prototype](https://mischkerzendesk.github.io/dialogue-only-prototype/)**
+
 ---
 
 ## The Problem This Solves
@@ -307,6 +309,13 @@ For additional help:
 - Contact your Customer Success Manager
 - Submit a ticket via the Help Center
 - Review the "Dialogues" documentation for flow-building guidance
+
+---
+
+## Resources
+
+- **Interactive Prototype:** https://mischkerzendesk.github.io/dialogue-only-prototype/
+- **GitHub Repository:** https://github.com/mischkerzendesk/dialogue-only-prototype
 
 ---
 
